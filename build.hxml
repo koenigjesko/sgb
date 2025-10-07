@@ -1,0 +1,4 @@
+# Builded for Neko Virtual Machine.
+
+-main sgb/Main.hx
+-neko bin/main.n

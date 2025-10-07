@@ -63,6 +63,32 @@ abstract ServerPort(Int) {
     }
 }
 
+abstract ResponseCode(Int) {
+    @:from
+    public static function fromInt(code: Int): ResponseCode {
+        if (code < 100 || code > 599) {
+            throw ValueError("The status code must be between 100 and 599 inclusive.");
+        }
+
+        return new ResponseCode(code);
+    }
+
+    public inline function new(number: Int) {
+        this = number;
+    }
+
+    public inline function getMessage(): String {
+        return switch (this) {
+            case 200: 
+                "OK";
+            case 501: 
+                "Not Implemented";
+            default: 
+                "Error";
+        };
+    }
+}
+
 abstract MaxConnections(Int) {
     @:from
     public static function fromInt(number: Int): MaxConnections {

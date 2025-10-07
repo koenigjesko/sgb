@@ -11,13 +11,14 @@ import sgb.Types.MaxConnections;
 import sgb.Types.RequestData;
 import sgb.Types.RequsetPath;
 import sgb.Types.RequestType;
+import sgb.Types.ResponseCode;
 import sgb.Types.ResponseData;
 import sgb.Types.ServerIP;
 import sgb.Types.ServerPort;
 
 class ServerBase {
-    private final ip: ServerIP;
-    private final port: ServerPort;
+    private var ip(default, null): ServerIP;
+    private var port(default, null): ServerPort;
 
     private function new(ip: ServerIP, port: ServerPort) {
         this.ip = ip;
@@ -28,15 +29,17 @@ class ServerBase {
         return "http://" + this.ip.toString() + this.port.forConcat();
     }
 
-    // Should be moved to next layer...
-    private function writePlainText(data: RequestData, printable: Dynamic): Void {
-        data.output.writeString("HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\n\r\n");
+    // TODO: Should be moved to next layer... AND REIMPLEMENTED!
+    private function sendResponseWithMessage(data: RequestData, code: ResponseCode, printable: Dynamic): Void {
+        var responseMessage = code.getMessage();
+
+        data.output.writeString('HTTP/1.1 $code $responseMessage\nContent-Type: plain/text\r\n\r\n');
         data.output.writeString(Std.string(printable));
     }
 }
 
 final class ServerApi extends ServerBase {
-    public final maxConnetions: MaxConnections;
+    public var maxConnetions(default, null): MaxConnections;
 
     public function new(ip: ServerIP, port: ServerPort, maxConnetions: MaxConnections) {
         super(ip, port); 
@@ -50,7 +53,7 @@ final class ServerApi extends ServerBase {
         socket.bind(host, this.port);
         socket.listen(this.maxConnetions);
 
-        trace("Server started on http://" + this.ip.toString() + this.port.forConcat()); // Sys.println() may be?
+        Sys.println("Server started on " + this.getServerUri() + "/");
 
         while (true) {
             var request = socket.accept();
@@ -71,7 +74,7 @@ final class ServerApi extends ServerBase {
                     trace("Another request methods in not implemented.");
             }
         } catch (error) {
-            trace(error);
+            trace(error); // Should this be thrown?
         }
 
         socket.close();
@@ -132,28 +135,26 @@ final class ServerApi extends ServerBase {
             data.input.readFullBytes(body, 0, len);
             
             var imageFilePath = "upload.jpg";
-            File.saveBytes(imageFilePath, body); // Create a system for downloading and storing photos.
+            File.saveBytes(imageFilePath, body); // TODO: Create a system for downloading and storing photos.
 
             var result = sendTo3DAPI(imageFilePath);
             var json = Json.stringify(result);
 
-            writePlainText(data, json);
+            sendResponseWithMessage(data, 200, json);
             return;
         }
         
-        writePlainText(data, 'Upload an image on ${this.getServerUri()}/upload to proceed next steps.');
+        sendResponseWithMessage(data, 501, 'Upload an image on ${this.getServerUri()}/upload/ to proceed next steps.');
     }
 
     private function handleGetRequest(data: RequestData): Void {
-        writePlainText(
-            data, 
-            'Use POST method with uploading a picture on ${this.getServerUri()}/upload path to send image.'
+        sendResponseWithMessage(
+            data,
+            501,
+            'Use POST method with uploading a picture on ${this.getServerUri()}/upload/ path to send image.'
         );
     }
 
-    /**
-     * This method is a stopgap. It needs to be rewritten from scratch.
-     **/
     private function sendTo3DAPI(imagePath: String): ResponseData {
         var http = new Http("https://api.example.com"); // Replace with a real API. 
 
