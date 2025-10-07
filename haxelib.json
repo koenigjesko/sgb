@@ -1,0 +1,11 @@
+{
+    "name": "sgb",
+    "url": "https://github.com/koenigjesko/sgb",
+    "license": "Apache",
+    "tags": ["sgb", "haxe", "koenigjesko"],
+    "description": "A test-like 3D Souvenirs Generator backend server implementaton.",
+    "version": "0.1.0",
+    "classPath": "sgb/",
+    "contributors": ["KoenigJesko"],
+    "main": "sgb.Main"
+}
