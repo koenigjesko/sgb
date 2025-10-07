@@ -1,6 +1,6 @@
 package sgb;
 
-import sgb.Server.ApiServer;
+import sgb.Server.ServerApi;
 import sgb.Types.MaxConnections;
 import sgb.Types.ServerIP;
 import sgb.Types.ServerPort;
@@ -12,7 +12,7 @@ final class Main {
         var serverPort: ServerPort = 8080;
         var maxConnections: MaxConnections = 10; // This might discussed!
 
-        var server = new ApiServer(serverIP, serverPort, maxConnections);
+        var server = new ServerApi(serverIP, serverPort, maxConnections);
 
         server.startListening();
     }

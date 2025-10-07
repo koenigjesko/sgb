@@ -11,17 +11,35 @@ import sgb.Types.MaxConnections;
 import sgb.Types.RequestData;
 import sgb.Types.RequsetPath;
 import sgb.Types.RequestType;
+import sgb.Types.ResponseData;
 import sgb.Types.ServerIP;
 import sgb.Types.ServerPort;
 
-final class ApiServer {
-    public final ip: ServerIP;
-    public final port: ServerPort;
+class ServerBase {
+    private final ip: ServerIP;
+    private final port: ServerPort;
+
+    private function new(ip: ServerIP, port: ServerPort) {
+        this.ip = ip;
+        this.port = port;
+    }
+
+    private function getServerUri(): String {
+        return "http://" + this.ip.toString() + this.port.forConcat();
+    }
+
+    // Should be moved to next layer...
+    private function writePlainText(data: RequestData, printable: Dynamic): Void {
+        data.output.writeString("HTTP/1.1 200 OK\r\nContent-Type: plain/text\r\n\r\n");
+        data.output.writeString(Std.string(printable));
+    }
+}
+
+final class ServerApi extends ServerBase {
     public final maxConnetions: MaxConnections;
 
     public function new(ip: ServerIP, port: ServerPort, maxConnetions: MaxConnections) {
-        this.ip = ip;
-        this.port = port;
+        super(ip, port); 
         this.maxConnetions = maxConnetions;
     }
 
@@ -42,7 +60,7 @@ final class ApiServer {
 
     public function handleRequest(socket: Socket): Void {
         try {
-            var data = defineRequestData(socket);     
+            var data = defineRequestData(socket);   
 
             switch (data.method) {
                 case Post:
@@ -64,23 +82,21 @@ final class ApiServer {
         var parts = line.split(" ");
 
         var method = switch (parts[0]) {
-            case "POST": 
-                Post;
             case "GET":
                 Get;
+            case "POST": 
+                Post;
             default:
                 Unhandled;
         };
         var path = switch (parts[1]) {
-            case "/":
-                Root;
             case "/upload":
                 Upload;
             default:
                 Another;
         };
 
-        var headers = new Map<String,String>();
+        var headers = new Map<String, String>();
 
         while (true) {
             var localQuery = socket.input.readLine();
@@ -117,29 +133,34 @@ final class ApiServer {
             
             var imageFilePath = "upload.jpg";
             File.saveBytes(imageFilePath, body); // Create a system for downloading and storing photos.
-            var result = sendTo3DAPI(imageFilePath);
 
+            var result = sendTo3DAPI(imageFilePath);
             var json = Json.stringify(result);
-            data.output.writeString("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n");
-            data.output.writeString(json);
+
+            writePlainText(data, json);
+            return;
         }
+        
+        writePlainText(data, 'Upload an image on ${this.getServerUri()}/upload to proceed next steps.');
     }
 
     private function handleGetRequest(data: RequestData): Void {
-        data.output.writeString("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
-        data.output.writeString("Use POST /upload to send image.");
+        writePlainText(
+            data, 
+            'Use POST method with uploading a picture on ${this.getServerUri()}/upload path to send image.'
+        );
     }
 
     /**
      * This method is a stopgap. It needs to be rewritten from scratch.
      **/
-    function sendTo3DAPI(imagePath: String): String {
+    private function sendTo3DAPI(imagePath: String): ResponseData {
         var http = new Http("https://api.example.com"); // Replace with a real API. 
 
         http.addHeader("Authorization", "API_KEY");
         http.setPostData(imagePath); // You can insert a Base64 file here.
         http.request(true);
 
-        return "Not implemented yet."; // return {status: http.responseStatus, data: http.responseData}
+        return { data: http.responseData };
     }
 }

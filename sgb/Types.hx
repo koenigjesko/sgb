@@ -90,7 +90,6 @@ enum RequestType {
 }
 
 enum RequsetPath {
-    Root;
     Upload;
     Another;
 }
@@ -101,6 +100,10 @@ typedef RequestData = {
     public var output(default, null): Output;
     public var method(default, null): RequestType;
     public var path(default, null): RequsetPath;
+}
+
+typedef ResponseData = {
+    public var data(default, null): Null<String>;
 }
 
 enum SGBErrors {
